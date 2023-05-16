@@ -1,0 +1,279 @@
+---
+title: "Final"
+authors: "Nick Yurashku"
+date: "2023-05-13"
+output: html_document
+---
+
+Analysis will start with uploading and cleaning of the data. 
+
+
+```{r}
+#this upload is based off of a pc's directory, be sure to change it to your specific one.
+
+campaigns <- read.csv('C:/Users/nicky/Desktop/Syracuse Grad School/IST 707/Final Project/CandidateSummaryAction.csv')
+
+```
+
+
+```{r}
+#data set needs to be cleaned of data that is not needed:
+str(campaigns)
+```
+
+Unneeded columns were dropped below
+
+```{r}
+campaigns <- subset(campaigns, select = -c(can_off_dis, tot_rec, tot_dis, cas_on_han_beg_of_per,
+                                            cas_on_han_clo_of_per, deb_owe_by_com, deb_owe_to_com,
+                                            cov_sta_dat, cov_end_dat, can_str1, can_str2, can_cit,
+                                            can_zip, off_to_ope_exp, off_to_fun, off_to_leg_acc,
+                                            exe_leg_acc_dis, fun_dis, can_loa_rep, oth_loa_rep,
+                                            tot_loa_rep, ind_ref, par_com_ref, oth_com_ref,
+                                            tot_con_ref, oth_dis, tot_dis))
+
+```
+
+
+```{r}
+str(campaigns)
+```
+Next, to check for null values:
+
+```{r}
+colSums(is.na(campaigns))
+```
+
+Votes data is unreliable and will have to be removed as a column. Author of data set said the following: 'the votes column was not part of the metadata. I had to scrape that info manually from CNN's election results page here:
+
+https://www.cnn.com/election/2016/results/house
+
+My apologies for any errors on my part, there is definitely a chance for human error. In which districts have you found discrepancies?'
+
+
+```{r}
+campaigns <- subset(campaigns, select = -c(votes))
+
+
+```
+
+
+```{r}
+#saving data into a new csv
+
+write.csv(campaigns,'C:/Users/nicky/Desktop/Syracuse Grad School/IST 707/Final Project/campaigns_new.csv')
+```
+
+
+
+```{r}
+#id isn't needed neither
+campaigns <- subset(campaigns, select = -c(can_id))
+```
+
+```{r}
+campaigns <- subset(campaigns, select = -c(can_nam))
+```
+
+Need to change data types
+
+```{r}
+str(campaigns)
+```
+before turning everything numeric for money attributes, need to get rid of dollar signs and commas.
+
+```{r}
+campaigns$tot_con <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$tot_con)))
+campaigns$ind_ite_con <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$ind_ite_con)))
+campaigns$ind_uni_con <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$ind_uni_con)))
+campaigns$ind_con <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$ind_con)))
+campaigns$par_com_con <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$par_com_con)))
+campaigns$oth_com_con <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$oth_com_con)))
+campaigns$can_con <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$can_con)))
+campaigns$tra_fro_oth_aut_com <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$tra_fro_oth_aut_com)))
+campaigns$can_loa <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$can_loa)))
+campaigns$oth_loa <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$oth_loa)))
+campaigns$oth_rec <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$oth_rec)))
+campaigns$ope_exp <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$ope_exp)))
+campaigns$tra_to_oth_aut_com <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$tra_to_oth_aut_com)))
+campaigns$net_con <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$net_con)))
+campaigns$net_ope_exp <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$net_ope_exp)))
+campaigns$tot_loa <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$tot_loa)))
+```
+
+
+
+
+
+```{r}
+campaigns$can_off <- as.factor(campaigns$can_off)
+campaigns$can_off_sta <- as.factor(campaigns$can_off_sta)
+campaigns$can_par_aff <- as.factor(campaigns$can_par_aff)
+campaigns$can_inc_cha_ope_sea <- as.factor(campaigns$can_inc_cha_ope_sea)
+campaigns$can_sta <- as.factor(campaigns$can_sta)
+
+campaigns$winner <- as.factor(campaigns$winner)
+```
+NA's have been now introduced. So this should be fixed.
+
+```{r}
+colSums(is.na(campaigns))
+```
+
+All the na's are from null values in the money columns. Turning all of them to zero makes sense.
+```{r}
+campaigns[is.na(campaigns)] <- 0
+
+```
+
+```{r}
+str(campaigns)
+```
+
+```{r}
+sum(campaigns$tot_con)
+```
+
+
+```{r}
+str(campaigns)
+```
+
+Candidate state is not needed:
+
+```{r}
+campaigns <- subset(campaigns, select = -c(can_sta))
+```
+
+
+```{r}
+str(campaigns)
+```
+
+```{r}
+levels(campaigns$winner)[levels(campaigns$winner) == ""] <- "N"
+summary(campaigns$winner)
+```
+
+```{r}
+levels(campaigns$can_inc_cha_ope_sea)[levels(campaigns$can_inc_cha_ope_sea) == ""] <- "UNKNOWN"
+summary(campaigns$can_inc_cha_ope_sea)
+```
+
+Printing final cleaned csv
+
+```{r}
+write.csv(campaigns,'C:/Users/nicky/Desktop/Syracuse Grad School/IST 707/Final Project/campaigns_cleaned.csv')
+```
+
+
+
+
+```{r}
+summary(campaigns$can_par_aff)
+```
+
+```{r}
+ggplot(campaigns, aes(x=can_par_aff)) + geom_bar(aes(y=..count..),fill = 'lightpink',color = 'black',alpha = .8)
+```
+
+```{r}
+ggplot(campaigns, aes(x=can_par_aff,y=tot_con)) + geom_bar(aes(y=..count..),fill = 'lightpink',color = 'black',alpha = .8)
+```
+
+
+Income sources per party: 
+```{r}
+
+df_long2 <- campaigns %>%
+  pivot_longer(cols = c(ind_ite_con, ind_uni_con),
+               names_to = "contribution_type",
+               values_to = "amount")
+
+
+ggplot(df_long2, aes(fill=contribution_type, y=amount, x=can_par_aff)) + 
+  geom_bar(position="stack", stat="identity") +
+  labs(x = "Candidate Party Affiliation", 
+       y = "Contribution Amount", 
+       fill = "Contribution Type", 
+       title = "Breakdown of Contributions by Party Affiliation") +
+  theme_minimal()
+
+
+```
+
+Digging deeper, individual contribution break down.
+
+```{r}
+df_long <- campaigns %>%
+  pivot_longer(cols = c(ind_con, par_com_con, oth_com_con, can_con),
+               names_to = "contribution_type",
+               values_to = "amount")
+
+
+ggplot(df_long, aes(fill=contribution_type, y=amount, x=can_par_aff)) + 
+  geom_bar(position="stack", stat="identity") +
+  labs(x = "Candidate Party Affiliation", 
+       y = "Contribution Amount", 
+       fill = "Contribution Type", 
+       title = "Breakdown of Contributions by Party Affiliation") +
+  theme_minimal()
+```
+
+Most Expensive State Race
+
+```{r}
+ggplot(campaigns, aes(x=can_off_sta,y=tot_con)) + geom_bar(aes(y=..count..),fill = 'magenta',color = 'black',alpha = .8)
+#this is too crowded
+```
+
+```{r}
+
+# Aggregating the data
+state_totals <- campaigns %>%
+  group_by(can_off_sta) %>%
+  summarise(tot_con_state = sum(tot_con, na.rm = TRUE)) %>%
+  arrange(desc(tot_con_state))
+
+# Selecting the top N states
+top_states <- state_totals %>%
+  top_n(10, wt = tot_con_state)
+
+# Filtering the original data for only these states
+campaigns_filtered <- campaigns %>%
+  filter(can_off_sta %in% top_states$can_off_sta)
+
+# Create the plot
+ggplot(campaigns_filtered, aes(x=can_off_sta, y=tot_con)) + 
+  geom_bar(stat="identity", fill = 'magenta', color = 'black', alpha = .8)
+
+```
+
+
+
+Party with most wins
+
+```{r}
+ggplot(campaigns, aes(x=can_par_aff,y=winner)) + geom_bar(aes(y=..count..),fill = 'darkgoldenrod',color = 'black',alpha = .8)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
