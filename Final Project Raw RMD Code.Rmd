@@ -1,0 +1,762 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+
+
+Analysis will start with uploading and cleaning of the data. 
+
+
+```{r}
+#this upload is based off of a pc's directory, be sure to change it to your specific one.
+
+campaigns <- read.csv('C:/Users/nicky/Desktop/Syracuse Grad School/IST 707/Final Project/CandidateSummaryAction.csv')
+
+```
+
+
+```{r}
+#data set needs to be cleaned of data that is not needed:
+#str(campaigns)
+```
+
+Unneeded columns were dropped below
+
+```{r}
+campaigns <- subset(campaigns, select = -c(can_off_dis, tot_rec, tot_dis, cas_on_han_beg_of_per,
+                                            cas_on_han_clo_of_per, deb_owe_by_com, deb_owe_to_com,
+                                            cov_sta_dat, cov_end_dat, can_str1, can_str2, can_cit,
+                                            can_zip, off_to_ope_exp, off_to_fun, off_to_leg_acc,
+                                            exe_leg_acc_dis, fun_dis, can_loa_rep, oth_loa_rep,
+                                            tot_loa_rep, ind_ref, par_com_ref, oth_com_ref,
+                                            tot_con_ref, oth_dis, tot_dis))
+
+```
+
+
+```{r}
+#str(campaigns)
+```
+Next, to check for null values:
+
+```{r}
+colSums(is.na(campaigns))
+```
+
+Votes data is unreliable and will have to be removed as a column. Author of data set said the following: 'the votes column was not part of the metadata. I had to scrape that info manually from CNN's election results page here:
+
+https://www.cnn.com/election/2016/results/house
+
+My apologies for any errors on my part, there is definitely a chance for human error. In which districts have you found discrepancies?'
+
+
+```{r}
+campaigns <- subset(campaigns, select = -c(votes))
+
+
+```
+
+
+```{r}
+#saving data into a new csv
+
+write.csv(campaigns,'C:/Users/nicky/Desktop/Syracuse Grad School/IST 707/Final Project/campaigns_new.csv')
+```
+
+
+
+```{r}
+#id isn't needed neither
+campaigns <- subset(campaigns, select = -c(can_id))
+```
+
+```{r}
+campaigns <- subset(campaigns, select = -c(can_nam))
+```
+
+Need to change data types
+
+```{r}
+str(campaigns)
+```
+before turning everything numeric for money attributes, need to get rid of dollar signs and commas.
+
+```{r}
+campaigns$tot_con <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$tot_con)))
+campaigns$ind_ite_con <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$ind_ite_con)))
+campaigns$ind_uni_con <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$ind_uni_con)))
+campaigns$ind_con <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$ind_con)))
+campaigns$par_com_con <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$par_com_con)))
+campaigns$oth_com_con <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$oth_com_con)))
+campaigns$can_con <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$can_con)))
+campaigns$tra_fro_oth_aut_com <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$tra_fro_oth_aut_com)))
+campaigns$can_loa <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$can_loa)))
+campaigns$oth_loa <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$oth_loa)))
+campaigns$oth_rec <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$oth_rec)))
+campaigns$ope_exp <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$ope_exp)))
+campaigns$tra_to_oth_aut_com <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$tra_to_oth_aut_com)))
+campaigns$net_con <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$net_con)))
+campaigns$net_ope_exp <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$net_ope_exp)))
+campaigns$tot_loa <- as.numeric(gsub(",", "", gsub("\\$", "", campaigns$tot_loa)))
+```
+
+
+
+
+
+```{r}
+campaigns$can_off <- as.factor(campaigns$can_off)
+campaigns$can_off_sta <- as.factor(campaigns$can_off_sta)
+campaigns$can_par_aff <- as.factor(campaigns$can_par_aff)
+campaigns$can_inc_cha_ope_sea <- as.factor(campaigns$can_inc_cha_ope_sea)
+campaigns$can_sta <- as.factor(campaigns$can_sta)
+
+campaigns$winner <- as.factor(campaigns$winner)
+```
+NA's have been now introduced. So this should be fixed.
+
+```{r}
+colSums(is.na(campaigns))
+```
+
+All the na's are from null values in the money columns. Turning all of them to zero makes sense.
+```{r}
+campaigns[is.na(campaigns)] <- 0
+
+```
+
+```{r}
+str(campaigns)
+```
+
+```{r}
+sum(campaigns$tot_con)
+```
+
+
+```{r}
+str(campaigns)
+```
+
+Candidate state is not needed:
+
+```{r}
+campaigns <- subset(campaigns, select = -c(can_sta))
+```
+
+
+```{r}
+str(campaigns)
+```
+
+```{r}
+levels(campaigns$winner)[levels(campaigns$winner) == ""] <- "N"
+summary(campaigns$winner)
+```
+
+```{r}
+levels(campaigns$can_inc_cha_ope_sea)[levels(campaigns$can_inc_cha_ope_sea) == ""] <- "UNKNOWN"
+summary(campaigns$can_inc_cha_ope_sea)
+```
+
+Printing final cleaned csv
+
+```{r}
+write.csv(campaigns,'C:/Users/nicky/Desktop/Syracuse Grad School/IST 707/Final Project/campaigns_cleaned.csv')
+```
+
+
+
+
+```{r}
+summary(campaigns$can_par_aff)
+```
+
+```{r}
+library(ggplot2)
+ggplot(campaigns, aes(x=can_par_aff)) + geom_bar(aes(y=..count..),fill = 'lightpink',color = 'black',alpha = .8)
+```
+
+```{r}
+ggplot(campaigns, aes(x=can_par_aff,y=tot_con)) + geom_bar(aes(y=..count..),fill = 'lightpink',color = 'black',alpha = .8)
+```
+
+
+Income sources per party: 
+```{r}
+library(tidyverse)
+df_long2 <- campaigns %>%
+  pivot_longer(cols = c(ind_ite_con, ind_uni_con),
+               names_to = "contribution_type",
+               values_to = "amount")
+
+
+ggplot(df_long2, aes(fill=contribution_type, y=amount, x=can_par_aff)) + 
+  geom_bar(position="stack", stat="identity") +
+  labs(x = "Candidate Party Affiliation", 
+       y = "Contribution Amount", 
+       fill = "Contribution Type", 
+       title = "Breakdown of Contributions by Party Affiliation") +
+  theme_minimal()
+
+
+```
+
+Digging deeper, individual contribution break down.
+
+```{r}
+df_long <- campaigns %>%
+  pivot_longer(cols = c(ind_con, par_com_con, oth_com_con, can_con),
+               names_to = "contribution_type",
+               values_to = "amount")
+
+
+ggplot(df_long, aes(fill=contribution_type, y=amount, x=can_par_aff)) + 
+  geom_bar(position="stack", stat="identity") +
+  labs(x = "Candidate Party Affiliation", 
+       y = "Contribution Amount", 
+       fill = "Contribution Type", 
+       title = "Breakdown of Contributions by Party Affiliation") +
+  theme_minimal()
+```
+
+Most Expensive State Race
+
+```{r}
+ggplot(campaigns, aes(x=can_off_sta,y=tot_con)) + geom_bar(aes(y=..count..),fill = 'magenta',color = 'black',alpha = .8)
+#this is too crowded
+```
+
+```{r}
+
+# Aggregating the data
+state_totals <- campaigns %>%
+  group_by(can_off_sta) %>%
+  summarise(tot_con_state = sum(tot_con, na.rm = TRUE)) %>%
+  arrange(desc(tot_con_state))
+
+# Selecting the top N states
+top_states <- state_totals %>%
+  top_n(10, wt = tot_con_state)
+
+# Filtering the original data for only these states
+campaigns_filtered <- campaigns %>%
+  filter(can_off_sta %in% top_states$can_off_sta)
+
+# Create the plot
+ggplot(campaigns_filtered, aes(x=can_off_sta, y=tot_con)) + 
+  geom_bar(stat="identity", fill = 'magenta', color = 'black', alpha = .8)
+
+```
+
+
+
+Party with most wins
+
+```{r}
+ggplot(campaigns, aes(x=can_par_aff,y=winner)) + geom_bar(aes(y=..count..),fill = 'darkgoldenrod',color = 'black',alpha = .8)
+```
+
+```{r}
+#creating a new data set with all cleaned data 
+campaigns_cl <- read.csv('C:/Users/nicky/Desktop/Syracuse Grad School/IST 707/Final Project/campaigns_cleaned.csv')
+str(campaigns_cl)
+
+```
+In order for association rule mining to work, all attributes that will be used need to be turned into characters.Since not all numerical columns need to be chosen since they are all additions of each other, all that will be needed is the total columns for the different expenses.
+
+```{r}
+arm_df <- subset(campaigns_cl, select = -c(X,ind_con,tot_con,tot_loa))
+
+```
+
+Next, summary will be used so that the ranges can be determined for association rule mining. costs will be broken into 5 categories - none, low, medium-low, medium, medium-high, high, huge.
+
+```{r}
+summary(arm_df)
+```
+
+making characters for each attribute:
+
+```{r}
+arm_df$ind_ite_con <- cut(arm_df$ind_ite_con, breaks = c(0,1,10000,56000,420000,1000000,50000000,100000000), labels=c('None','low','medium-low','medium','medium-high','high','huge'), right=FALSE)
+
+```
+
+Now for the rest of the attributes
+```{r}
+arm_df$ind_uni_con <- cut(arm_df$ind_uni_con, breaks = c(0,1,10000,56000,420000,1000000,50000000,100000000), labels=c('None','low','medium-low','medium','medium-high','high','huge'), right=FALSE)
+
+arm_df$par_com_con <- cut(arm_df$par_com_con, breaks = c(0,1,10000,56000,420000,1000000,50000000,100000000), labels=c('None','low','medium-low','medium','medium-high','high','huge'), right=FALSE)
+
+arm_df$oth_com_con <- cut(arm_df$oth_com_con, breaks = c(0,1,10000,56000,420000,1000000,50000000,100000000), labels=c('None','low','medium-low','medium','medium-high','high','huge'), right=FALSE)
+
+arm_df$can_con <- cut(arm_df$can_con, breaks = c(0,1,10000,56000,420000,1000000,50000000,100000000), labels=c('None','low','medium-low','medium','medium-high','high','huge'), right=FALSE)
+
+arm_df$tra_fro_oth_aut_com <- cut(arm_df$tra_fro_oth_aut_com, breaks = c(0,1,10000,56000,420000,1000000,50000000,100000000), labels=c('None','low','medium-low','medium','medium-high','high','huge'), right=FALSE)
+
+arm_df$can_loa <- cut(arm_df$can_loa, breaks = c(0,1,10000,56000,420000,1000000,50000000,100000000), labels=c('None','low','medium-low','medium','medium-high','high','huge'), right=FALSE)
+
+arm_df$oth_loa <- cut(arm_df$oth_loa, breaks = c(0,1,10000,56000,420000,1000000,50000000,100000000), labels=c('None','low','medium-low','medium','medium-high','high','huge'), right=FALSE)
+
+arm_df$oth_rec <- cut(arm_df$oth_rec, breaks = c(0,1,10000,56000,420000,1000000,50000000,100000000), labels=c('None','low','medium-low','medium','medium-high','high','huge'), right=FALSE)
+
+arm_df$ope_exp <- cut(arm_df$ope_exp, breaks = c(0,1,10000,56000,420000,1000000,50000000,100000000), labels=c('None','low','medium-low','medium','medium-high','high','huge'), right=FALSE)
+
+arm_df$tra_to_oth_aut_com <- cut(arm_df$tra_to_oth_aut_com, breaks = c(0,1,10000,56000,420000,1000000,50000000,100000000), labels=c('None','low','medium-low','medium','medium-high','high','huge'), right=FALSE)
+
+arm_df$net_con <- cut(arm_df$net_con, breaks = c(0,1,10000,56000,420000,1000000,50000000,100000000), labels=c('None','low','medium-low','medium','medium-high','high','huge'), right=FALSE)
+
+arm_df$net_ope_exp <- cut(arm_df$net_ope_exp, breaks = c(0,1,10000,56000,420000,1000000,50000000,100000000), labels=c('None','low','medium-low','medium','medium-high','high','huge'), right=FALSE)
+```
+
+```{r}
+str(arm_df)
+```
+
+Turning remaining attributes into factors as well to finalize the set for ARM
+
+```{r}
+arm_df$can_off <- as.factor(arm_df$can_off)
+arm_df$can_off_sta <- as.factor(arm_df$can_off_sta)
+arm_df$can_par_aff <- as.factor(arm_df$can_par_aff)
+arm_df$can_inc_cha_ope_sea <- as.factor(arm_df$can_inc_cha_ope_sea)
+arm_df$winner <- as.factor(arm_df$winner)
+```
+
+
+```{r}
+str(arm_df)
+```
+
+```{r}
+#needed libraries
+#install.packages("arules")
+library(arules)
+```
+next, converting data frame to a transactions object.
+```{r}
+trans <- as(arm_df, "transactions")
+
+```
+
+Mining the association rules with the apriori function. Using a minimum support of 0.1 and a minimum confidence of 0.8:
+
+```{r}
+rules <- apriori(trans, parameter = list(supp = 0.1, conf = 0.8))
+
+```
+inspecting rules by lift and confidence:
+```{r}
+inspect(sort(rules, by="lift")[1:10])
+inspect(sort(rules, by="confidence")[1:10])
+
+
+```
+
+For all the lift rules, lift is only at 1 which shows that these rules actually are independent from one another. Ex) x occurs as often as y. So these rules will not tell us anything interesting. 
+
+Confident is another story and actually reveals some information. As a reminder: The confidence of an association rules (X => Y) measures how often Y is found in transactions that contain X.
+
+The top 3 rules show the following: 
+
+1. {can_loa=low} => {winner=N}
+
+This rule suggests that if the loan amount taken by the candidate is low (can_loa=low), then it's likely the candidate does not win the election (winner=N). The confidence of this rule is 0.1174201, which means this rule is correct about 11.7% of the time. The Lift of this rule is 1.350707, suggesting that the rule is 1.35 times more likely to be correct than a random assignment.
+
+2. {ind_ite_con=None} => {winner=N}
+
+This rule suggests that if there are no itemized individual contributions (ind_ite_con=None), then it's likely the candidate does not win the election (winner=N). The confidence of this rule is 0.1345094, which means this rule is correct about 13.4% of the time. The Lift of this rule is 1.350707, suggesting that the rule is 1.35 times more likely to be correct than a random assignment.
+
+3. {net_ope_exp=low} => {winner=N}
+
+This rule suggests that if the net operational expenditure is low (net_ope_exp=low), then it's likely the candidate does not win the election (winner=N). The confidence of this rule is 0.1493936, which means this rule is correct about 14.9% of the time. The Lift of this rule is 1.350707, suggesting that the rule is 1.35 times more likely to be correct than a random assignment.
+
+These rules suggest a pattern in which a low spending candidate or low contribution receiving candidate often does not lead to not winning the election. The higher the confidence, the more frequently the rule has been found to be true. The Lift values greater than 1 suggest these rules are significant, as they are more likely than chance.
+####################
+The next step will be using actual predictive algorithm on the data. We will use the older data set since Naive Bayes can handle both numerical and discrete variables.
+
+```{r}
+library(e1071)
+
+```
+Need to take out some unneeded variables:
+```{r}
+str(campaigns_cl)
+
+```
+```{r}
+nb_df <- subset(campaigns_cl, select = -c(X))
+
+nb_df$can_off <- as.factor(nb_df$can_off)
+nb_df$can_off_sta <- as.factor(nb_df$can_off_sta)
+nb_df$can_par_aff <- as.factor(nb_df$can_par_aff)
+nb_df$can_inc_cha_ope_sea <- as.factor(nb_df$can_inc_cha_ope_sea)
+nb_df$winner <- as.factor(nb_df$winner)
+```
+
+```{r}
+str(nb_df)
+```
+
+
+```{r}
+# Spliting data into train and test datasets
+
+set.seed(123)
+train_indices_nb <- sample(1:nrow(nb_df), nrow(nb_df)*0.7)
+train_df_nb <- nb_df[train_indices_nb, ]
+test_df_nb <- nb_df[-train_indices_nb, ]
+```
+
+Training the naive bayes model
+
+```{r}
+naive_model <- naiveBayes(winner ~ ., data = train_df_nb)
+```
+
+```{r}
+predictions_nb <- predict(naive_model, test_df_nb)
+```
+
+```{r}
+library(caret)
+
+confusionMatrix(predictions_nb, test_df_nb$winner)
+```
+
+The confusion matrix that the naive bayes algorithm output and the statistics provide an overview of the performance of the model.
+
+Meaning of the confusion matrix. 
+True Negative (N, N): The model correctly predicted 64 times that the candidate would not win.
+False Negative (Y, N): The model incorrectly predicted 1 time that a winning candidate would not win.
+False Positive (N, Y): The model incorrectly predicted 330 times that a losing candidate would win.
+True Positive (Y, Y): The model correctly predicted 150 times that the candidate would win.
+
+Accuracy is the proportion of true results. Here, the accuracy is 0.3927, or about 39.27%. This means that the model correctly predicts the outcome about 39.27% of the time.
+
+The Kappa statistic is a measure of how much better the predictions of the model are compared to predictions made by chance. Here, the kappa is 0.0932, which is quite low (a perfect model has a kappa of 1), indicating that the model is not much better than a random model.
+
+Sensitivity is the proportion of actual positives that are correctly identified. In this case, the sensitivity is 0.1624, meaning that the model identifies about 16.24% of the winning candidates correctly.
+
+Specificity measures the proportion of actual negatives that are correctly identified. Here, the specificity is 0.9934, suggesting the model is very good at identifying candidates that won't win.
+
+The Positive Predictive Value is the proportion of positive cases that were correctly identified by the model. In this case, it's 0.9846 or 98.46% of candidates predicted not to win, did indeed not win. However, the Negative Predictive Value is low (0.3125 or 31.25%), meaning that of all the candidates that were predicted to win, only 31.25% actually won.
+
+The No Information Rate is a baseline comparison, which is the accuracy that can be achieved without a model by always guessing the most frequent category. In this case, guessing the candidate does not win all the time would be right 72.29% of the time.
+
+The p-value associated with the accuracy being greater than the no information rate is 1, which indicates no evidence of the model doing better than the no information rate.
+
+Overall, this model seems to be better at predicting losers than predicting winners (low sensitivity and negative predictive value). The low accuracy, kappa, and high p-value suggest that there might be a need to improve this model, possibly by revising the feature set, using a different model, or adjusting the class imbalance.
+
+#############################
+
+The next is to use the kNN algorithm. The first step is to actually find out the optimal k to assign. To do this, we will use k-fold process:
+
+```{r}
+#libraries
+library(class)
+library(caret)
+
+```
+
+
+```{r}
+knn_df <- subset(campaigns_cl, select = -c(X))
+```
+
+training control
+```{r}
+train_control_knn <- trainControl(method="cv", number=10)
+```
+
+Scaling the numeric data
+
+```{r}
+knn_df[,sapply(knn_df, is.numeric)] <- scale(knn_df[,sapply(knn_df, is.numeric)])
+```
+
+```{r}
+str(knn_df)
+```
+
+
+removing winner
+
+```{r}
+knn_df_class <- knn_df$winner
+knn_df$winner <- NULL
+```
+
+Cannot perform knn without removing remaining categorical variables. Need to use a technique called hot encoding to change them into numerical ones.
+
+```{r}
+df_encoded <- cbind(knn_df[, !(names(knn_df) %in% "can_off")], model.matrix(~can_off - 1, knn_df))
+```
+
+```{r}
+str(df_encoded)
+```
+This adds a lot of dimensional but does the job to change variables into numerical ones. So the same will be done for the rest: https://stackoverflow.com/questions/48649443/how-to-one-hot-encode-several-categorical-variables-in-r
+
+```{r}
+df_encoded <- cbind(df_encoded[, !(names(df_encoded) %in% "can_off_sta")], model.matrix(~can_off_sta - 1, df_encoded))
+df_encoded <- cbind(df_encoded[, !(names(df_encoded) %in% "can_par_aff")], model.matrix(~can_par_aff - 1, df_encoded))
+df_encoded <- cbind(df_encoded[, !(names(df_encoded) %in% "can_inc_cha_ope_sea")], model.matrix(~can_inc_cha_ope_sea - 1, df_encoded))
+
+```
+
+```{r}
+str(df_encoded)
+```
+
+
+Performing kNN to find optimal K
+
+```{r}
+knn_fit <- train(df_encoded, knn_df_class, method="knn", tuneLength=10, trControl=train_control_knn)
+
+```
+
+```{r}
+print(knn_fit$bestTune)
+```
+
+Now that we have the optimal K, we can also use the Knn model:
+
+```{r}
+knn_df2 <- subset(campaigns_cl, select = -c(X))
+
+# Scaling the data again
+knn_df2[,sapply(knn_df2, is.numeric)] <- scale(knn_df2[,sapply(knn_df2, is.numeric)])
+
+#turning categorical variables into numeric
+knn_df2 <- cbind(knn_df2[, !(names(knn_df2) %in% "can_off")], model.matrix(~can_off - 1, knn_df2))
+knn_df2 <- cbind(knn_df2[, !(names(knn_df2) %in% "can_off_sta")], model.matrix(~can_off_sta - 1, knn_df2))
+knn_df2 <- cbind(knn_df2[, !(names(knn_df2) %in% "can_par_aff")], model.matrix(~can_par_aff - 1, knn_df2))
+knn_df2 <- cbind(knn_df2[, !(names(knn_df2) %in% "can_inc_cha_ope_sea")], model.matrix(~can_inc_cha_ope_sea - 1, knn_df2))
+
+# Spliting the data into a training set and a test set
+set.seed(123)
+data_index <- sample(1:nrow(knn_df2), nrow(knn_df2)*0.7)
+train_set <- knn_df2[data_index,]
+test_set <- knn_df2[-data_index,]
+
+# The 'class' column is our target variable
+train_labels <- train_set$winner
+test_labels <- test_set$winner
+
+# Removing the 'class' column from the training and test set
+train_set$winner <- NULL
+test_set$winner <- NULL
+
+# Performing kNN
+knn_pred <- knn(train = train_set, test = test_set, cl = train_labels, k=11) # using 11 because that was the optimal.
+
+# Checking the accuracy of the model
+mean(test_labels == knn_pred)
+```
+
+0.946789, is the accuracy of the knn model. Mean Accuracy computes the number of correct predictions divided by the total number of predictions.The accuracy of 0.946789 means that the model correctly predicted the outcome approximately 94.68%. This is generally a good result, but not if the cost of a false negative is very high. While in other applications, we might not mind a high false negative amount, this might be the case if there are costs on the line. 
+
+#########
+
+SVM Model was next on the list and also only takes numeric attributes so that same scaled and numeric data set from above.
+
+```{r}
+library(e1071)
+
+svm_df <- subset(campaigns_cl, select = -c(X))
+
+
+# Scaling the data again
+svm_df[,sapply(svm_df, is.numeric)] <- scale(svm_df[,sapply(svm_df, is.numeric)])
+
+#turning categorical variables into numeric
+svm_df <- cbind(svm_df[, !(names(svm_df) %in% "can_off")], model.matrix(~can_off - 1, svm_df))
+svm_df <- cbind(svm_df[, !(names(svm_df) %in% "can_off_sta")], model.matrix(~can_off_sta - 1, svm_df))
+svm_df <- cbind(svm_df[, !(names(svm_df) %in% "can_par_aff")], model.matrix(~can_par_aff - 1, svm_df))
+svm_df <- cbind(svm_df[, !(names(svm_df) %in% "can_inc_cha_ope_sea")], model.matrix(~can_inc_cha_ope_sea - 1, svm_df))
+svm_df$winner <- ifelse(svm_df$winner == "Y", 1, 0)
+
+set.seed(123) 
+split_index <- sample(2, nrow(svm_df), replace=TRUE, prob=c(0.7,0.3))
+train_data <- svm_df[split_index==1,]
+test_data <- svm_df[split_index==2,]
+
+svm_model <- svm(winner ~ ., data = train_data, kernel = "radial", scale = TRUE)
+
+
+
+predictions <- predict(svm_model, newdata = test_data)
+
+
+confusion_matrix <- table(pred = predictions, true = test_data$winner)
+accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+print(paste('Accuracy:', accuracy))
+```
+
+Such a low accuracy rate was expected because of the huge disparity between losers and winners.
+
+```{r}
+winner_counts <- table(svm_df$winner)
+
+print(winner_counts)
+```
+```{r}
+471/1343
+```
+
+As we can see above, only 35% of the data are winners which could be why the model was performing so badly. 
+
+#############################
+
+Next is decision trees and some columns will have to removed because decision trees are not good with data they havent seen. Some attributes such as party or state do not matter as much. This data set will have to be cleared of all the outlier parties that are not republican, democrat or independent.
+
+```{r}
+#str(campaigns_cl)
+```
+
+
+```{r}
+
+
+library(rpart)
+
+dt_df <- subset(campaigns_cl, select = -c(X))
+dt_df<- dt_df[dt_df$can_par_aff %in% c("REP", "DEM", "IDP"), ]
+
+set.seed(123) 
+
+split_index <- sample(2, nrow(dt_df), replace=TRUE, prob=c(0.8,0.2))
+train_data <- dt_df[split_index==1,]
+test_data <- dt_df[split_index==2,]
+
+# Training
+tree_model <- rpart(winner ~ ., data = train_data, method = "class")
+
+# Printing the decision tree model
+print(tree_model)
+
+# Plotting the decision tree
+plot(tree_model, uniform=TRUE, main="Decision Tree")
+text(tree_model, use.n=TRUE, all=TRUE, cex=.8)
+
+# Making predictions on testing data
+predictions <- predict(tree_model, newdata = test_data, type = "class")
+
+# accuracy
+confusion_matrix <- table(pred = predictions, true = test_data$winner)
+accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+print(paste('Accuracy:', accuracy))
+
+```
+
+The root of the tree (node 1) includes all 1290 observations. The base prediction (yval) is 'N', because the majority (about 70.6%) of the candidates did not win.
+
+The first split (node 2) is based on the variable 'can_inc_cha_ope_sea'. If a candidate is an 'INCUMBENT', the model predicts a win (node 3) with a very high probability (95.7%).
+
+If a candidate is a 'CHALLENGER', 'OPEN', or 'UNKNOWN', the model makes further splits based on the 'oth_com_con' and 'can_off_sta' variables (nodes 4 and 5).
+
+For 'oth_com_con' < 85283.5 (node 4), the model predicts 'N' (not win) with a very high probability (99.6%).
+
+For 'oth_com_con' >= 85283.5 (node 5), the model makes further decisions based on the 'can_off_sta' variable. If 'can_off_sta' belongs to 'AR,CA,CO,IA,IN,MD,MN,MT,NC,NY,OH,PA,US,UT,WV', the model predicts 'N' (node 10), and if 'can_off_sta' belongs to 'AZ,DE,FL,GA,IL,KS,KY,LA,MI,NE,NH,NJ,NV,TN,TX,VA,WA,WI,WY', the model makes further decisions based on the 'ind_uni_con' variable (node 11).
+
+If 'ind_uni_con' >= 245244.4 (node 22), the model predicts 'N', and if 'ind_uni_con' < 245244.4 (node 23), the model predicts 'Y' (win) with a high probability (74.4%).
+
+The accuracy of this model on the test set is about 91.9%, which means the model correctly predicted the winner for about 91.9% of the cases in the test set.
+
+#############
+
+Finally, random forest:
+
+```{r}
+library(randomForest)
+
+rf_df <- subset(campaigns_cl, select = -c(X))
+rf_df<- rf_df[rf_df$can_par_aff %in% c("REP", "DEM", "IDP"), ]
+rf_df$winner <- as.factor(rf_df$winner)
+
+set.seed(123) 
+
+split_index <- sample(2, nrow(rf_df), replace=TRUE, prob=c(0.8,0.2))
+train_data <- rf_df[split_index==1,]
+test_data <- rf_df[split_index==2,]
+
+# Training
+rf_model <- randomForest(winner ~ ., data = train_data, ntree = 500, mtry = 3, importance = TRUE)
+
+# Printing the decision tree model
+print(rf_model)
+
+# Making predictions on testing data
+predictions <- predict(rf_model, newdata = test_data)
+
+# accuracy
+confusion_matrix <- table(pred = predictions, true = test_data$winner)
+accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+print(paste('Accuracy:', accuracy))
+
+
+importance(rf_model)
+```
+
+
+The output shows a lot of details.
+
+Type of random forest: classification - means we used a classification model. The target variable, winner, is categorical.
+
+Number of trees: 500. This is the number of trees that were used to vote for the class in classification or averaged in regression.
+
+No. of variables tried at each split: 3 - At each split in each decision tree, 3 variables were randomly selected as candidates for splitting.
+
+OOB estimate of error rate: 4.73% - This is the Out-of-bag error estimate, which is a method of measuring the prediction error of random forests. This error rate suggests that the model is quite good, as the error rate is very low.
+
+The confusion matrix provides a summary of the model's performance. It's a 2x2 matrix: "Y" and "N". The model has classified 882 instances correctly as 'N' and 29 incorrectly as 'Y'. Similarly, it has classified 347 instances correctly as 'Y' and 32 incorrectly as 'N'. The class error is calculated as the number of wrong predictions divided by the total predictions for each class.
+
+Accuracy: 0.964401294498382 - This is the overall accuracy of the model on the test data. It is very high, which indicates that the model did a great job in classifying the winner.
+
+
+
+```{r}
+str(rf_df)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
