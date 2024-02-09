@@ -1,1 +1,2 @@
-![image](https://github.com/jmjustis/CampaignFinance/assets/119478875/ba7eea1a-9625-4dde-ae30-de899d5d5509)
+
+![Screenshot 2024-02-09 152536](https://github.com/jmjustis/CampaignFinance/assets/119478875/b765f679-7223-4245-a9c7-f61b08a0d8a4)
